@@ -1,37 +1,36 @@
 #include "mbed.h"
+#include "CANMsg.h"
+#include "rover_config.h"
+#include "PinNames.h"
+#include "tutorial_servo.h"
 
-DigitalOut ledA(LED1);
-DigitalOut ledB(LED2);
-DigitalOut ledC(LED3);
-DigitalOut ledD(LED4);
+long DEFAULT_BAUD = 500000;
+CAN can(CAN_RX, CAN_TX, DEFAULT_BAUD);
+Serial pc(USBTX, USBRX, 9600);
 
-int main() {
-    int count = 0;
+CANMsg rxMsg;
+
+TutorialServo servo(PA_1, 180);
+
+Timer timer;
+
+float pos = 1;
+
+int main(){
+
+    timer.start();
+    servo.setRangeInDegrees(180);
 
     while(1) {
 
-        // Trigger the four LEDs one after the other
-        switch (count) {
-            case 1: 
-                ledA = 1;
-                ledD = 0;
-                break;
-            case 2:
-                ledB = 1;
-                ledA = 0;
-                break;
-            case 3:
-                ledC = 1;
-                ledB = 0;
-                break;
-            case 4:
-                ledD = 1;
-                ledC = 0;
-                count = 0;
-                break;
+        if(timer.read_ms() > 2000){
+            pc.printf("%f \n", pos);
+            timer.reset();
         }
 
-        count++;
-        wait(0.5);
+        if(can.read(rxMsg)){
+            rxMsg >> pos;
+            servo.setPositionInDegrees(pos);
+        }
     }
 }
